@@ -15,7 +15,7 @@ var (
 type s3UploadingProvider struct {
 }
 
-func MustNewS3Bucket() *s3.Bucket {
+func init() {
 	auth, err := aws.EnvAuth()
 	if err != nil {
 		log.Fatalf("EnvAuth failed, error: %s", err)
@@ -25,7 +25,7 @@ func MustNewS3Bucket() *s3.Bucket {
 		log.Fatalf("AWS_LETSENCRYPT_S3PROVIDER_BUCKET required")
 	}
 	client := s3.New(auth, aws.USEast)
-	return client.Bucket(bucket)
+	Bucket = client.Bucket(bucket)
 }
 
 func NewS3UploadingProvider() acme.ChallengeProvider {
@@ -35,9 +35,6 @@ func NewS3UploadingProvider() acme.ChallengeProvider {
 func (p s3UploadingProvider) Present(domain, token, keyAuth string) error {
 	log.Printf("Present domain: %s\ntoken: %s\nkeyAuth: %s", domain, token, keyAuth)
 
-	if Bucket == nil {
-		Bucket = MustNewS3Bucket()
-	}
 	if err := Bucket.Put(token, []byte(keyAuth), "text/plain", s3.Private); err != nil {
 		log.Printf("Put: %s failed, error: %s", token, err)
 	}
