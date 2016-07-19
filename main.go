@@ -14,8 +14,8 @@ const (
 func main() {
 	log.SetFlags(log.Lmicroseconds | log.Lshortfile)
 
-	if len(os.Args) != 4 {
-		log.Fatalf("Usage: %s {email} {domain} {production|staging}", os.Args[0])
+	if len(os.Args) != 6 {
+		log.Fatalf("Usage: %s {email} {domain} {production|staging} {out privatekey} {out cert}", os.Args[0])
 	}
 	email := os.Args[1]
 	domain := os.Args[2]
@@ -25,6 +25,17 @@ func main() {
 	} else {
 		directory = stagingDirectoryURL
 	}
+	privatekeyFilename := os.Args[4]
+	privatekeyFile, err := os.Create(privatekeyFilename)
+	if err != nil {
+		log.Fatalf("Failed to Create: %s, error: %s", privatekeyFilename, err)
+	}
+	certFilename := os.Args[5]
+	certFile, err := os.Create(certFilename)
+	if err != nil {
+		log.Fatalf("Failed to Create: %s, error: %s", certFilename, err)
+	}
+
 	log.Printf("Using directory: %s", directory)
 
 	user, err := NewUser(email)
@@ -70,4 +81,11 @@ func main() {
 	// Each certificate comes back with the cert bytes, the bytes of the client's
 	// private key, and a certificate URL. SAVE THESE TO DISK.
 	log.Printf("certificates: %#v\n", certificates)
+
+	if _, err := privatekeyFile.Write(certificates.PrivateKey); err != nil {
+		log.Fatalf("Failed to Write: %s, error: %s", privatekeyFilename, err)
+	}
+	if _, err := certFile.Write(certificates.Certificate); err != nil {
+		log.Fatalf("Failed to Write: %s, error: %s", privatekeyFilename, err)
+	}
 }

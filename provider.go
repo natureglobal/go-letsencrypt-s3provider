@@ -20,9 +20,9 @@ func MustNewS3Bucket() *s3.Bucket {
 	if err != nil {
 		log.Fatalf("EnvAuth failed, error: %s", err)
 	}
-	bucket := os.Getenv("AWS_S3FILE_BUCKET")
+	bucket := os.Getenv("AWS_LETSENCRYPT_S3PROVIDER_BUCKET")
 	if bucket == "" {
-		log.Fatalf("AWS_S3FILE_BUCKET required")
+		log.Fatalf("AWS_LETSENCRYPT_S3PROVIDER_BUCKET required")
 	}
 	client := s3.New(auth, aws.USEast)
 	return client.Bucket(bucket)
