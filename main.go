@@ -81,7 +81,7 @@ func main() {
 
 	// Each certificate comes back with the cert bytes, the bytes of the client's
 	// private key, and a certificate URL. SAVE THESE TO DISK.
-	log.Printf("certificates: %#v\n", certificates)
+	// log.Printf("certificates: %#v\n", certificates)
 
 	if _, err := privatekeyFile.Write(certificates.PrivateKey); err != nil {
 		log.Fatalf("Failed to Write: %s, error: %s", privatekeyFilename, err)
