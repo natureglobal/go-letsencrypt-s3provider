@@ -1,9 +1,10 @@
 package main
 
 import (
-	"github.com/xenolf/lego/acme"
 	"log"
 	"os"
+
+	"github.com/xenolf/lego/acme"
 )
 
 const (
@@ -75,7 +76,7 @@ func main() {
 	bundle := false
 	certificates, failures := client.ObtainCertificate([]string{domain}, bundle, nil)
 	if len(failures) > 0 {
-		log.Printf("Failed to ObtainCertificate failed, failures: %s", failures)
+		log.Fatalf("Failed to ObtainCertificate failed, failures: %s", failures)
 	}
 
 	// Each certificate comes back with the cert bytes, the bytes of the client's
