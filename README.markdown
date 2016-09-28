@@ -11,7 +11,7 @@ This is a custom Let's Encrypt challenge provider that is based on the webroot p
 
 1. When requested to meet the challenge, this script creates a file in a S3 bucket (which is provided as `AWS_LETSENCRYPT_S3PROVIDER_BUCKET` environment variable) with `token` as the name and `keyAuth` as the content.
 2. And removes the file on cleanup.
-3. When Let's Encrypt fetches the token (ex: `example.com/.well-known/acme-challenge/xxxxxx`), another web application handles the request (not discussed here), fetches the file from the same S3 bucket and responds to Let's Encrypt's request.
+3. When Let's Encrypt fetches the token (ex: `example.com/.well-known/acme-challenge/xxxxxx`), another web application handles the request (use the `func Handler(w http.ResponseWriter, req *http.Request)` in `handler/`), fetches the file from the same S3 bucket and responds to Let's Encrypt's request.
 
 ## Usage
 
