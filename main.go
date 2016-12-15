@@ -74,7 +74,9 @@ func main() {
 	// The acme library takes care of completing the challenges to obtain the certificate(s).
 	// The domains must resolve to this machine or you have to use the DNS challenge.
 	bundle := false
-	certificates, failures := client.ObtainCertificate([]string{domain}, bundle, nil)
+	// ELB doesn't support OCSP stapling
+	mustStaple := false
+	certificates, failures := client.ObtainCertificate([]string{domain}, bundle, nil, mustStaple)
 	if len(failures) > 0 {
 		log.Fatalf("Failed to ObtainCertificate failed, failures: %s", failures)
 	}
