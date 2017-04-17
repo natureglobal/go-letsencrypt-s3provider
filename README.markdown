@@ -7,7 +7,7 @@ We're using a name server that cannot manipulate it's records over an open API, 
 
 ## Description
 
-This is a custom Let's Encrypt challenge provider that is based on the webroot provider:
+This is a custom Let's Encrypt challenge provider based on the webroot provider but behaves differently when challenged.
 
 1. When requested to meet the challenge, this script creates a file in a S3 bucket (which is provided as `AWS_LETSENCRYPT_S3PROVIDER_BUCKET` environment variable) with `token` as the name and `keyAuth` as the content.
 2. And removes the file on cleanup.
@@ -16,6 +16,9 @@ This is a custom Let's Encrypt challenge provider that is based on the webroot p
 ## Usage
 
 ``` bash
-AWS_SECRET_KEY={SECRET_KEY} AWS_ACCESS_KEY_ID={ACCESS_KEY} AWS_LETSENCRYPT_S3PROVIDER_BUCKET="bucket name} go-letsencrypt-s3provider {email} {domain} production privatekey.pem cert.pem
 # creates privatekey.pem and cert.pem
+AWS_SECRET_KEY={SECRET_KEY} \
+AWS_ACCESS_KEY_ID={ACCESS_KEY} \
+AWS_LETSENCRYPT_S3PROVIDER_BUCKET={bucket name} \
+go-letsencrypt-s3provider {email} {domain1,domain2,..} production privatekey.pem cert.pem
 ```
