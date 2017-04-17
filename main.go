@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"strings"
 
 	"github.com/xenolf/lego/acme"
 )
@@ -16,10 +17,10 @@ func main() {
 	log.SetFlags(log.Lmicroseconds | log.Lshortfile)
 
 	if len(os.Args) != 6 {
-		log.Fatalf("Usage: %s {email} {domain} {production|staging} {out privatekey} {out cert}", os.Args[0])
+		log.Fatalf("Usage: %s {email} {domain1,domain2,..} {production|staging} {out privatekey} {out cert}", os.Args[0])
 	}
 	email := os.Args[1]
-	domain := os.Args[2]
+	domains := strings.Split(os.Args[2], ",")
 	directory := os.Args[3]
 	if directory == "production" {
 		directory = directoryURL
@@ -76,7 +77,7 @@ func main() {
 	bundle := false
 	// ELB doesn't support OCSP stapling
 	mustStaple := false
-	certificates, failures := client.ObtainCertificate([]string{domain}, bundle, nil, mustStaple)
+	certificates, failures := client.ObtainCertificate(domains, bundle, nil, mustStaple)
 	if len(failures) > 0 {
 		log.Fatalf("Failed to ObtainCertificate failed, failures: %s", failures)
 	}
