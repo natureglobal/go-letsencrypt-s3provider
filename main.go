@@ -2,15 +2,19 @@ package main
 
 import (
 	"log"
+	"net/http"
 	"os"
 	"strings"
 
-	"github.com/go-acme/lego/acme"
+	"github.com/go-acme/lego/certcrypto"
+	"github.com/go-acme/lego/certificate"
+	"github.com/go-acme/lego/lego"
+	"github.com/go-acme/lego/registration"
 )
 
 const (
-	stagingDirectoryURL = "https://acme-staging.api.letsencrypt.org/directory"
-	directoryURL        = "https://acme-v01.api.letsencrypt.org/directory"
+	stagingDirectoryURL = lego.LEDirectoryStaging
+	directoryURL        = lego.LEDirectoryProduction
 )
 
 func main() {
@@ -46,46 +50,48 @@ func main() {
 	}
 
 	// A client facilitates communication with the CA server.
-	client, err := acme.NewClient(directory, &user, acme.RSA2048)
+	client, err := lego.NewClient(&lego.Config{
+		HTTPClient: http.DefaultClient,
+		CADirURL:   directory,
+		User:       user,
+		Certificate: lego.CertificateConfig{
+			KeyType: certcrypto.RSA2048,
+		},
+	})
 	if err != nil {
 		log.Fatalf("Failed to NewClient, error: %s", err)
 	}
 
 	// New users will need to register
-	reg, err := client.Register()
-	if err != nil {
+	if _, err := client.Registration.Register(registration.RegisterOptions{
+		// The client has a URL to the current Let's Encrypt Subscriber
+		// Agreement. The user will need to agree to it.
+		TermsOfServiceAgreed: true,
+	}); err != nil {
 		log.Fatalf("Failed to Register, error: %s", err)
 	}
-	user.Registration = reg
-
-	// The client has a URL to the current Let's Encrypt Subscriber
-	// Agreement. The user will need to agree to it.
-	if err := client.AgreeToTOS(); err != nil {
-		log.Fatalf("Failed to AgreeToTOS, error: %s", err)
-	}
-
-	// We only use HTTP01
-	client.ExcludeChallenges([]acme.Challenge{acme.TLSSNI01, acme.DNS01})
 
 	provider := NewS3UploadingProvider()
-	if err := client.SetChallengeProvider(acme.HTTP01, provider); err != nil {
+	// We only use HTTP01
+	if err := client.Challenge.SetHTTP01Provider(provider); err != nil {
 		log.Fatalf("Failed to SetChallengeProvider failed, error: %s", err)
 	}
 
-	// The acme library takes care of completing the challenges to obtain the certificate(s).
-	// The domains must resolve to this machine or you have to use the DNS challenge.
-	bundle := false
-	// ELB doesn't support OCSP stapling
-	mustStaple := false
-	certificates, failures := client.ObtainCertificate(domains, bundle, nil, mustStaple)
-	if len(failures) > 0 {
-		log.Fatalf("Failed to ObtainCertificate failed, failures: %s", failures)
+	certificates, err := client.Certificate.Obtain(certificate.ObtainRequest{
+		Domains: domains,
+		// The acme library takes care of completing the challenges to obtain the certificate(s).
+		// The domains must resolve to this machine or you have to use the DNS challenge.
+		Bundle: false,
+		// ELB doesn't support OCSP stapling
+		MustStaple: false,
+	})
+	if err != nil {
+		log.Fatalf("Failed to ObtainCertificate failed, failures: %s", err)
 	}
 
 	// Each certificate comes back with the cert bytes, the bytes of the client's
 	// private key, and a certificate URL. SAVE THESE TO DISK.
 	// log.Printf("certificates: %#v\n", certificates)
-
 	if _, err := privatekeyFile.Write(certificates.PrivateKey); err != nil {
 		log.Fatalf("Failed to Write: %s, error: %s", privatekeyFilename, err)
 	}

@@ -4,13 +4,14 @@ import (
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
-	"github.com/go-acme/lego/acme"
+
+	"github.com/go-acme/lego/registration"
 )
 
 // You'll need a user or account type that implements acme.User
 type User struct {
 	Email        string
-	Registration *acme.RegistrationResource
+	Registration *registration.Resource
 	key          crypto.PrivateKey
 }
 
@@ -31,7 +32,7 @@ func NewUser(email string) (User, error) {
 func (u User) GetEmail() string {
 	return u.Email
 }
-func (u User) GetRegistration() *acme.RegistrationResource {
+func (u User) GetRegistration() *registration.Resource {
 	return u.Registration
 }
 func (u User) GetPrivateKey() crypto.PrivateKey {
