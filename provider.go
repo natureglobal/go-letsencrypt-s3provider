@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/mitchellh/goamz/aws"
 	"github.com/mitchellh/goamz/s3"
-	"github.com/xenolf/lego/acme"
+	"github.com/go-acme/lego/acme"
 	"log"
 	"os"
 )

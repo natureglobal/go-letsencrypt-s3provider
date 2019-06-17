@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/xenolf/lego/acme"
+	"github.com/go-acme/lego/acme"
 )
 
 const (
