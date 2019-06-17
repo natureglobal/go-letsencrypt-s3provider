@@ -14,17 +14,17 @@ const (
 	UserAgent       string        = "s3file/1.0"
 )
 
-var handler http.Handler
+var Handler http.Handler
 
 func init() {
 	bucket := os.Getenv("AWS_LETSENCRYPT_S3PROVIDER_BUCKET")
 	if bucket == "" {
 		panic("AWS_LETSENCRYPT_S3PROVIDER_BUCKET required")
 	}
-	handler = s3proxy.Proxy(bucket)
+	Handler = s3proxy.Proxy(bucket)
 }
 
-func Handler(w http.ResponseWriter, req *http.Request) {
+func Handle(w http.ResponseWriter, req *http.Request) {
 	log.Printf("Func path: %s", req.URL.Path)
-	handler.ServeHTTP(w, req)
+	Handler.ServeHTTP(w, req)
 }
