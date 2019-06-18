@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	s3cli      *s3.S3
+	svc        *s3.S3
 	bucketName string
 )
 
@@ -30,7 +30,7 @@ func init() {
 	if bucketName == "" {
 		log.Fatalf("AWS_LETSENCRYPT_S3PROVIDER_BUCKET required")
 	}
-	s3cli = s3.New(sess)
+	svc = s3.New(sess)
 }
 
 func NewS3UploadingProvider() challenge.Provider {
@@ -40,7 +40,7 @@ func NewS3UploadingProvider() challenge.Provider {
 func (p s3UploadingProvider) Present(domain, token, keyAuth string) error {
 	log.Printf("Present domain: %s\ntoken: %s\nkeyAuth: %s", domain, token, keyAuth)
 
-	if _, err := s3cli.PutObject(&s3.PutObjectInput{
+	if _, err := svc.PutObject(&s3.PutObjectInput{
 		ACL:         aws.String(s3.BucketCannedACLPrivate),
 		Body:        strings.NewReader(keyAuth),
 		ContentType: aws.String("text/plain"),
@@ -56,7 +56,7 @@ func (p s3UploadingProvider) Present(domain, token, keyAuth string) error {
 func (p s3UploadingProvider) CleanUp(domain, token, keyAuth string) error {
 	log.Printf("CleanUp domain: %s\ntoken: %s\nkeyAuth: %s", domain, token, keyAuth)
 
-	if _, err := s3cli.DeleteObject(&s3.DeleteObjectInput{
+	if _, err := svc.DeleteObject(&s3.DeleteObjectInput{
 		Bucket: aws.String(bucketName),
 		Key:    aws.String(token),
 	}); err != nil {
