@@ -1,11 +1,12 @@
 package main
 
 import (
-	"github.com/mitchellh/goamz/aws"
-	"github.com/mitchellh/goamz/s3"
-	"github.com/xenolf/lego/acme"
 	"log"
 	"os"
+
+	"github.com/go-acme/lego/challenge"
+	"github.com/mitchellh/goamz/aws"
+	"github.com/mitchellh/goamz/s3"
 )
 
 var (
@@ -28,7 +29,7 @@ func init() {
 	Bucket = client.Bucket(bucket)
 }
 
-func NewS3UploadingProvider() acme.ChallengeProvider {
+func NewS3UploadingProvider() challenge.Provider {
 	return s3UploadingProvider{}
 }
 
