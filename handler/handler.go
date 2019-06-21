@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/mash/go-s3proxy"
+	"github.com/natureglobal/go-s3proxy"
 )
 
 const (
