@@ -47,7 +47,7 @@ CREDITS: devel-deps go.sum
 
 DIST_DIR = dist/v$(VERSION)
 .PHONY: crossbuild
-crossbuild: CREDITS
+crossbuild: devel-deps
 	rm -rf $(DIST_DIR)
 	goxz -arch=amd64 -os=linux,darwin \
       -build-tags=netgo -build-installsuffix=netgo \
@@ -71,4 +71,4 @@ docker-release:
       -e GITHUB_TOKEN="$(GITHUB_TOKEN)" \
       --rm \
       golang:1.12.6-alpine3.10 \
-      make crossbuild upload
+      sh -c 'apk add make git && make crossbuild upload'
