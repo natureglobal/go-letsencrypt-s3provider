@@ -14,12 +14,14 @@ deps:
 
 .PHONY: devel-deps
 devel-deps: deps
-	GO111MODULE=off go get ${u} \
-	  golang.org/x/lint/golint                  \
-	  github.com/Songmu/godzil/cmd/godzil       \
-	  github.com/Songmu/goxz/cmd/goxz           \
-	  github.com/Songmu/gocredits/cmd/gocredits \
-	  github.com/tcnksm/ghr
+	sh -c '\
+      tmpdir=$$(mktemp -d); \
+      cd $$tmpdir; \
+      go get ${u} \
+        golang.org/x/lint/golint            \
+        github.com/Songmu/godzil/cmd/godzil \
+        github.com/tcnksm/ghr;              \
+      rm -rf $$tmpdir'
 
 .PHONY: test
 test: deps
@@ -27,7 +29,6 @@ test: deps
 
 .PHONY: lint
 lint: devel-deps
-	go vet ./...
 	golint -set_exit_status ./...
 
 .PHONY: build
@@ -43,19 +44,19 @@ bump: devel-deps
 	godzil release
 
 CREDITS: devel-deps go.sum
-	gocredits -w
+	godzil credits -w
 
 DIST_DIR = dist/v$(VERSION)
 .PHONY: crossbuild
 crossbuild: devel-deps
 	rm -rf $(DIST_DIR)
-	goxz -arch=amd64 -os=linux,darwin \
+	CGO_ENABLED=0 godzil crossbuild -arch=amd64 -os=linux,darwin \
       -build-tags=netgo -build-installsuffix=netgo \
-      -build-ldflags=$(BUILD_LDFLAGS) -d $(DIST_DIR)
+      -build-ldflags=$(BUILD_LDFLAGS) -d $(DIST_DIR) ./cmd/*
 
 .PHONY: upload
 upload:
-	ghr v$(VERSION) $(DIST_DIR)
+	ghr -body="$$(./godzil changelog --latest -F markdown)" v$(VERSION) $(DIST_DIR)
 
 .PHONY: release
 release: bump docker-release
@@ -70,5 +71,5 @@ docker-release:
       -w /go-letsencrypt-s3provider \
       -e GITHUB_TOKEN="$(GITHUB_TOKEN)" \
       --rm \
-      golang:1.12.6-alpine3.10 \
+      golang:1.14.2-alpine3.11 \
       sh -c 'apk add make git && make crossbuild upload'

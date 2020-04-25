@@ -1,4 +1,4 @@
-package main
+package letsencrypts3provider
 
 import (
 	"log"
