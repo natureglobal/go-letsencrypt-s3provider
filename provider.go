@@ -15,6 +15,8 @@ type s3UploadingProvider struct {
 	svc    *s3.S3
 }
 
+var _ challenge.Provider = s3UploadingProvider{}
+
 const defaultRegion = "us-east-1"
 
 func newS3() (*s3.S3, error) {
@@ -28,7 +30,7 @@ func newS3() (*s3.S3, error) {
 	return s3.New(sess), nil
 }
 
-func NewS3UploadingProvider(bucket string) (challenge.Provider, error) {
+func newS3UploadingProvider(bucket string) (challenge.Provider, error) {
 	svc, err := newS3()
 	if err != nil {
 		return nil, err

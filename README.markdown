@@ -22,3 +22,15 @@ AWS_ACCESS_KEY_ID={ACCESS_KEY} \
 AWS_LETSENCRYPT_S3PROVIDER_BUCKET={bucket name} \
 go-letsencrypt-s3provider {email} {domain1,domain2,..} production privatekey.pem cert.pem
 ```
+It is easy to use go-s3proxy to access the challenge files placed in s3.
+
+```go
+import "github.com/natureglobal/go-s3proxy"
+
+var handler http.Handler = s3proxy.Proxy(os.Getenv("AWS_LETSENCRYPT_S3PROVIDER_BUCKET")
+
+func Handle(w http.ResponseWriter, req *http.Request) {
+	log.Printf("Func path: %s", req.URL.Path)
+	handler.ServeHTTP(w, req)
+}
+```

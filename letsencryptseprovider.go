@@ -63,7 +63,7 @@ func Obtain(domains []string, email, directory, bucket, privkeyFile, certFile st
 		return fmt.Errorf("Failed to Create: %s, error: %s", certFile, err)
 	}
 
-	user, err := NewUser(email)
+	u, err := newUser(email)
 	if err != nil {
 		return fmt.Errorf("Failed to NewUser, error: %s", err)
 	}
@@ -72,7 +72,7 @@ func Obtain(domains []string, email, directory, bucket, privkeyFile, certFile st
 	client, err := lego.NewClient(&lego.Config{
 		HTTPClient: http.DefaultClient,
 		CADirURL:   directory,
-		User:       user,
+		User:       u,
 		Certificate: lego.CertificateConfig{
 			KeyType: certcrypto.RSA2048,
 		},
@@ -90,7 +90,7 @@ func Obtain(domains []string, email, directory, bucket, privkeyFile, certFile st
 		return fmt.Errorf("Failed to Register, error: %s", err)
 	}
 
-	provider, err := NewS3UploadingProvider(bucket)
+	provider, err := newS3UploadingProvider(bucket)
 	if err != nil {
 		return fmt.Errorf("Failed to NewS3UploadingPrivider: %w", err)
 	}

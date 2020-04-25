@@ -9,32 +9,34 @@ import (
 )
 
 // You'll need a user or account type that implements acme.User
-type User struct {
+type user struct {
 	Email        string
 	Registration *registration.Resource
 	key          crypto.PrivateKey
 }
 
-func NewUser(email string) (User, error) {
+var _ registration.User = user{}
+
+func newUser(email string) (user, error) {
 	// Create a user. New accounts need an email and private key to start.
 	const rsaKeySize = 2048
 	privateKey, err := rsa.GenerateKey(rand.Reader, rsaKeySize)
 	if err != nil {
-		return User{}, err
+		return user{}, err
 	}
-	user := User{
+	u := user{
 		Email: email,
 		key:   privateKey,
 	}
-	return user, err
+	return u, err
 }
 
-func (u User) GetEmail() string {
+func (u user) GetEmail() string {
 	return u.Email
 }
-func (u User) GetRegistration() *registration.Resource {
+func (u user) GetRegistration() *registration.Resource {
 	return u.Registration
 }
-func (u User) GetPrivateKey() crypto.PrivateKey {
+func (u user) GetPrivateKey() crypto.PrivateKey {
 	return u.key
 }
