@@ -44,11 +44,16 @@ func Run(argv []string, stdout, stderr io.Writer) error {
 	} else {
 		directory = stagingDirectoryURL
 	}
-	return Obtain(domains, email, directory, privkeyFile, certFile)
+
+	bucket := os.Getenv("AWS_LETSENCRYPT_S3PROVIDER_BUCKET")
+	if bucket == "" {
+		return fmt.Errorf("AWS_LETSENCRYPT_S3PROVIDER_BUCKET required")
+	}
+	return Obtain(domains, email, directory, bucket, privkeyFile, certFile)
 }
 
 // Obtain server key and certificates
-func Obtain(domains []string, email, directory, privkeyFile, certFile string) error {
+func Obtain(domains []string, email, directory, bucket, privkeyFile, certFile string) error {
 	privatekeyF, err := os.Create(privkeyFile)
 	if err != nil {
 		return fmt.Errorf("Failed to Create: %s, error: %s", privkeyFile, err)
@@ -85,7 +90,10 @@ func Obtain(domains []string, email, directory, privkeyFile, certFile string) er
 		return fmt.Errorf("Failed to Register, error: %s", err)
 	}
 
-	provider := NewS3UploadingProvider()
+	provider, err := NewS3UploadingProvider(bucket)
+	if err != nil {
+		return fmt.Errorf("Failed to NewS3UploadingPrivider: %w", err)
+	}
 	// We only use HTTP01
 	if err := client.Challenge.SetHTTP01Provider(provider); err != nil {
 		return fmt.Errorf("Failed to SetChallengeProvider failed, error: %s", err)

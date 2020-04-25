@@ -2,7 +2,6 @@ package letsencrypts3provider
 
 import (
 	"log"
-	"os"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -11,40 +10,43 @@ import (
 	"github.com/go-acme/lego/challenge"
 )
 
-var (
-	svc        *s3.S3
-	bucketName string
-)
-
 type s3UploadingProvider struct {
+	bucket string
+	svc    *s3.S3
 }
 
-func init() {
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String("us-east-1"),
-	})
+const defaultRegion = "us-east-1"
+
+func newS3() (*s3.S3, error) {
+	sess, err := session.NewSession()
 	if err != nil {
-		log.Fatalf("session.NewSession failed, error: %s", err)
+		return nil, err
 	}
-	bucketName = os.Getenv("AWS_LETSENCRYPT_S3PROVIDER_BUCKET")
-	if bucketName == "" {
-		log.Fatalf("AWS_LETSENCRYPT_S3PROVIDER_BUCKET required")
+	if *sess.Config.Region == "" {
+		sess = sess.Copy(&aws.Config{Region: aws.String(defaultRegion)})
 	}
-	svc = s3.New(sess)
+	return s3.New(sess), nil
 }
 
-func NewS3UploadingProvider() challenge.Provider {
-	return s3UploadingProvider{}
+func NewS3UploadingProvider(bucket string) (challenge.Provider, error) {
+	svc, err := newS3()
+	if err != nil {
+		return nil, err
+	}
+	return s3UploadingProvider{
+		svc:    svc,
+		bucket: bucket,
+	}, nil
 }
 
 func (p s3UploadingProvider) Present(domain, token, keyAuth string) error {
 	log.Printf("Present domain: %s\ntoken: %s\nkeyAuth: %s", domain, token, keyAuth)
 
-	if _, err := svc.PutObject(&s3.PutObjectInput{
+	if _, err := p.svc.PutObject(&s3.PutObjectInput{
 		ACL:         aws.String(s3.BucketCannedACLPrivate),
 		Body:        strings.NewReader(keyAuth),
 		ContentType: aws.String("text/plain"),
-		Bucket:      aws.String(bucketName),
+		Bucket:      aws.String(p.bucket),
 		Key:         aws.String(token),
 	}); err != nil {
 		log.Printf("Put: %s failed, error: %s", token, err)
@@ -56,8 +58,8 @@ func (p s3UploadingProvider) Present(domain, token, keyAuth string) error {
 func (p s3UploadingProvider) CleanUp(domain, token, keyAuth string) error {
 	log.Printf("CleanUp domain: %s\ntoken: %s\nkeyAuth: %s", domain, token, keyAuth)
 
-	if _, err := svc.DeleteObject(&s3.DeleteObjectInput{
-		Bucket: aws.String(bucketName),
+	if _, err := p.svc.DeleteObject(&s3.DeleteObjectInput{
+		Bucket: aws.String(p.bucket),
 		Key:    aws.String(token),
 	}); err != nil {
 		log.Printf("Del: %s failed, error: %s", token, err)
