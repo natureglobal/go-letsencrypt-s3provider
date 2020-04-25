@@ -26,6 +26,7 @@ func help() string {
 	return "Usage: go-letsencrypt-s3provider {email} {domain1,domain2,..} {production|staging} {out privatekey} {out cert}"
 }
 
+// Run the letsencrypts3provider cli
 func Run(argv []string, stdout, stderr io.Writer) error {
 	if len(argv) != 5 || helpReg.MatchString(argv[0]) {
 		fmt.Fprintln(stdout, help())
@@ -35,25 +36,27 @@ func Run(argv []string, stdout, stderr io.Writer) error {
 	email := argv[0]
 	domains := strings.Split(argv[1], ",")
 	directory := argv[2]
-	privatekeyFilename := argv[3]
-	certFilename := argv[4]
+	privkeyFile := argv[3]
+	certFile := argv[4]
 
 	if directory == "production" {
 		directory = directoryURL
 	} else {
 		directory = stagingDirectoryURL
 	}
+	return Obtain(domains, email, directory, privkeyFile, certFile)
+}
 
-	privatekeyFile, err := os.Create(privatekeyFilename)
+// Obtain server key and certificates
+func Obtain(domains []string, email, directory, privkeyFile, certFile string) error {
+	privatekeyF, err := os.Create(privkeyFile)
 	if err != nil {
-		return fmt.Errorf("Failed to Create: %s, error: %s", privatekeyFilename, err)
+		return fmt.Errorf("Failed to Create: %s, error: %s", privkeyFile, err)
 	}
-	certFile, err := os.Create(certFilename)
+	certF, err := os.Create(certFile)
 	if err != nil {
-		return fmt.Errorf("Failed to Create: %s, error: %s", certFilename, err)
+		return fmt.Errorf("Failed to Create: %s, error: %s", certFile, err)
 	}
-
-	log.Printf("Using directory: %s", directory)
 
 	user, err := NewUser(email)
 	if err != nil {
@@ -102,12 +105,11 @@ func Run(argv []string, stdout, stderr io.Writer) error {
 
 	// Each certificate comes back with the cert bytes, the bytes of the client's
 	// private key, and a certificate URL. SAVE THESE TO DISK.
-	// log.Printf("certificates: %#v\n", certificates)
-	if _, err := privatekeyFile.Write(certificates.PrivateKey); err != nil {
-		return fmt.Errorf("Failed to Write: %s, error: %s", privatekeyFilename, err)
+	if _, err := privatekeyF.Write(certificates.PrivateKey); err != nil {
+		return fmt.Errorf("Failed to Write: %s, error: %s", privkeyFile, err)
 	}
-	if _, err := certFile.Write(certificates.Certificate); err != nil {
-		return fmt.Errorf("Failed to Write: %s, error: %s", privatekeyFilename, err)
+	if _, err := certF.Write(certificates.Certificate); err != nil {
+		return fmt.Errorf("Failed to Write: %s, error: %s", privkeyFile, err)
 	}
 	return nil
 }
