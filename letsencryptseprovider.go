@@ -19,6 +19,8 @@ import (
 const (
 	stagingDirectoryURL = lego.LEDirectoryStaging
 	directoryURL        = lego.LEDirectoryProduction
+	RootDST             = "DST Root CA X3"
+	RootISRG            = "ISRG Root X1"
 )
 
 var helpReg = regexp.MustCompile(`^--?h(?:elp)?$`)
