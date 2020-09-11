@@ -3,21 +3,24 @@ package letsencrypts3provider
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"regexp"
 	"strings"
 
-	"github.com/go-acme/lego/certcrypto"
-	"github.com/go-acme/lego/certificate"
-	"github.com/go-acme/lego/lego"
-	"github.com/go-acme/lego/registration"
+	"github.com/go-acme/lego/v4/certcrypto"
+	"github.com/go-acme/lego/v4/certificate"
+	"github.com/go-acme/lego/v4/lego"
+	"github.com/go-acme/lego/v4/registration"
 )
 
 const (
 	stagingDirectoryURL = lego.LEDirectoryStaging
 	directoryURL        = lego.LEDirectoryProduction
+	RootDST             = "DST Root CA X3"
+	RootISRG            = "ISRG Root X1"
 )
 
 var helpReg = regexp.MustCompile(`^--?h(?:elp)?$`)
@@ -49,25 +52,40 @@ func Run(argv []string, stdout, stderr io.Writer) error {
 	if bucket == "" {
 		return fmt.Errorf("AWS_LETSENCRYPT_S3PROVIDER_BUCKET required")
 	}
-	return Obtain(domains, email, directory, bucket, privkeyFile, certFile)
+	certificates, err := Obtain(&ObtainRequest{
+		Domains:   domains,
+		Directory: directory,
+		Email:     email,
+		Bucket:    bucket,
+	})
+	if err != nil {
+		return err
+	}
+	if err := ioutil.WriteFile(privkeyFile, certificates.PrivateKey, 0644); err != nil {
+		return err
+	}
+	return ioutil.WriteFile(certFile, certificates.Certificate, 0644)
+}
+
+type ObtainRequest struct {
+	Domains            []string
+	Directory          string
+	Email              string
+	Bucket             string
+	Bundle, MustStaple bool
+	PreferredChain     string
 }
 
 // Obtain server key and certificates
-func Obtain(domains []string, email, directory, bucket, privkeyFile, certFile string) error {
-	privatekeyF, err := os.Create(privkeyFile)
+func Obtain(ob *ObtainRequest) (*certificate.Resource, error) {
+	u, err := newUser(ob.Email)
 	if err != nil {
-		return fmt.Errorf("Failed to Create: %s, error: %s", privkeyFile, err)
+		return nil, fmt.Errorf("Failed to NewUser, error: %s", err)
 	}
-	certF, err := os.Create(certFile)
-	if err != nil {
-		return fmt.Errorf("Failed to Create: %s, error: %s", certFile, err)
+	directory := ob.Directory
+	if directory == "" {
+		directory = directoryURL
 	}
-
-	u, err := newUser(email)
-	if err != nil {
-		return fmt.Errorf("Failed to NewUser, error: %s", err)
-	}
-
 	// A client facilitates communication with the CA server.
 	client, err := lego.NewClient(&lego.Config{
 		HTTPClient: http.DefaultClient,
@@ -78,7 +96,7 @@ func Obtain(domains []string, email, directory, bucket, privkeyFile, certFile st
 		},
 	})
 	if err != nil {
-		return fmt.Errorf("Failed to NewClient, error: %s", err)
+		return nil, fmt.Errorf("Failed to NewClient, error: %s", err)
 	}
 
 	// New users will need to register
@@ -87,37 +105,25 @@ func Obtain(domains []string, email, directory, bucket, privkeyFile, certFile st
 		// Agreement. The user will need to agree to it.
 		TermsOfServiceAgreed: true,
 	}); err != nil {
-		return fmt.Errorf("Failed to Register, error: %s", err)
+		return nil, fmt.Errorf("Failed to Register, error: %s", err)
 	}
 
-	provider, err := newS3UploadingProvider(bucket)
+	provider, err := newS3UploadingProvider(ob.Bucket)
 	if err != nil {
-		return fmt.Errorf("Failed to NewS3UploadingPrivider: %w", err)
+		return nil, fmt.Errorf("Failed to NewS3UploadingPrivider: %w", err)
 	}
 	// We only use HTTP01
 	if err := client.Challenge.SetHTTP01Provider(provider); err != nil {
-		return fmt.Errorf("Failed to SetChallengeProvider failed, error: %s", err)
+		return nil, fmt.Errorf("Failed to SetChallengeProvider failed, error: %s", err)
 	}
 
-	certificates, err := client.Certificate.Obtain(certificate.ObtainRequest{
-		Domains: domains,
+	return client.Certificate.Obtain(certificate.ObtainRequest{
+		Domains: ob.Domains,
 		// The acme library takes care of completing the challenges to obtain the certificate(s).
 		// The domains must resolve to this machine or you have to use the DNS challenge.
-		Bundle: false,
+		Bundle: ob.Bundle,
 		// ELB doesn't support OCSP stapling
-		MustStaple: false,
+		MustStaple:     ob.MustStaple,
+		PreferredChain: ob.PreferredChain,
 	})
-	if err != nil {
-		return fmt.Errorf("Failed to ObtainCertificate failed, failures: %s", err)
-	}
-
-	// Each certificate comes back with the cert bytes, the bytes of the client's
-	// private key, and a certificate URL. SAVE THESE TO DISK.
-	if _, err := privatekeyF.Write(certificates.PrivateKey); err != nil {
-		return fmt.Errorf("Failed to Write: %s, error: %s", privkeyFile, err)
-	}
-	if _, err := certF.Write(certificates.Certificate); err != nil {
-		return fmt.Errorf("Failed to Write: %s, error: %s", privkeyFile, err)
-	}
-	return nil
 }
