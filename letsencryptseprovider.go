@@ -68,11 +68,12 @@ func Run(argv []string, stdout, stderr io.Writer) error {
 }
 
 type ObtainRequest struct {
-	Domains        []string
-	Directory      string
-	Email          string
-	Bucket         string
-	PreferredChain string
+	Domains            []string
+	Directory          string
+	Email              string
+	Bucket             string
+	Bundle, MustStaple bool
+	PreferredChain     string
 }
 
 // Obtain server key and certificates
@@ -120,9 +121,9 @@ func Obtain(ob *ObtainRequest) (*certificate.Resource, error) {
 		Domains: ob.Domains,
 		// The acme library takes care of completing the challenges to obtain the certificate(s).
 		// The domains must resolve to this machine or you have to use the DNS challenge.
-		Bundle: false,
+		Bundle: ob.Bundle,
 		// ELB doesn't support OCSP stapling
-		MustStaple:     false,
+		MustStaple:     ob.MustStaple,
 		PreferredChain: ob.PreferredChain,
 	})
 }
