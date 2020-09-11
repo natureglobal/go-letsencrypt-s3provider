@@ -5,7 +5,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 
-	"github.com/go-acme/lego/registration"
+	"github.com/go-acme/lego/v4/registration"
 )
 
 // You'll need a user or account type that implements acme.User
