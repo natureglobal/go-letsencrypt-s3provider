@@ -71,5 +71,5 @@ docker-release:
       -w /go-letsencrypt-s3provider \
       -e GITHUB_TOKEN="$(GITHUB_TOKEN)" \
       --rm \
-      golang:1.14.2-alpine3.11 \
+      golang:1.15.2-alpine3.12 \
       sh -c 'apk add make git && make crossbuild upload'
